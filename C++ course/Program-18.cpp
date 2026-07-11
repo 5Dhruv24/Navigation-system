@@ -18,6 +18,11 @@ class new90{
 };
 
 new90 valueassum(new90 m,new90 n){
+    new90 z;
+    int x=m.a+n.a;
+    int y=m.b+n.b;
+    z.enterdata(x,y);
+    return z;
     
 }
 
@@ -27,6 +32,7 @@ int main(){
     o1.showdata();
     o2.enterdata(3,4);
     o2.showdata();
-    o3=
+    o3=valueassum(o1,o2);
+    o3.showdata();
     return 0;
 }
