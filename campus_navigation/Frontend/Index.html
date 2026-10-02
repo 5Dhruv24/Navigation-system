@@ -33,9 +33,26 @@
 
   #mapstage {
     position: relative;
-    width: 1600px;   /* natural size of campus_map.jpg, scaled by transform below */
-    height: 1200px;
+    width: 1477px;   /* natural size of campus_map.jpg, scaled by transform below */
+    height: 897px;
     flex-shrink: 0;
+  }
+
+  .offframe-strip {
+    position: absolute;
+    top: 0; right: 0;
+    width: 300px; height: 100%;
+    border-left: 1px dashed #3e6690;
+  }
+  .offframe-note {
+    position: absolute;
+    top: 10px; right: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    color: #5c7a92;
+    max-width: 280px;
+    text-align: right;
+    line-height: 1.5;
   }
 
   #mapstage img {
@@ -218,8 +235,10 @@
 
 <div id="mapwrap">
   <div id="mapstage">
-    <img src="assets/campus_map.jpg" alt="GGSIPU East Delhi Campus map">
-    <svg id="overlay" width="100%" height="100%" viewBox="0 0 1600 1200" preserveAspectRatio="none"></svg>
+    <img src="assets/campus_map.jpg" alt="USAR GGSIPU East Delhi Campus — satellite view">
+    <div class="offframe-strip"></div>
+    <div class="offframe-note">Block E / Gate 02 / East End Club<br>lie further east — shown here<br>at approximate relative position</div>
+    <svg id="overlay" width="100%" height="100%" viewBox="0 0 1477 897" preserveAspectRatio="none"></svg>
   </div>
 </div>
 
@@ -266,20 +285,24 @@
   // eye against the block layout — nudge these if you want pixel
   // -perfect placement for your actual printout/photo.
   // ---------------------------------------------------------------
+  // Pixel coordinates on the real satellite screenshot
+  // (campus_map.jpg, 1477 x 897 — last 300px is a dark padding strip
+  // for the 3 locations that fall just outside the screenshot frame).
   const NODE_PIXELS = {
-    Gate01:         { x: 590, y: 355 },
-    Gate02:         { x: 1355, y: 630 },
-    BlockG:         { x: 220,  y: 500 },
-    BlockB:         { x: 470,  y: 550 },
-    BlockC:         { x: 620,  y: 545 },
-    BlockA:         { x: 765,  y: 540 },
-    BlockD:         { x: 630,  y: 645 },
-    BlockE:         { x: 1265, y: 525 },
-    EastEndClub:    { x: 1240, y: 685 },
-    BoysHostel:     { x: 235,  y: 695 },
-    TeachersHostel: { x: 195,  y: 835 },
-    GirlsHostel:    { x: 330,  y: 895 },
-    Housing:        { x: 245,  y: 1010 },
+    Gate01:         { x: 630, y: 160 },
+    BlockA:         { x: 615, y: 300 },  // matches the red pin (USAR)
+    BlockC:         { x: 560, y: 330 },
+    BlockB:         { x: 495, y: 355 },
+    BlockD:         { x: 560, y: 400 },
+    BlockG:         { x: 195, y: 460 },
+    BoysHostel:     { x: 230, y: 560 },
+    TeachersHostel: { x: 190, y: 650 },
+    GirlsHostel:    { x: 320, y: 700 },
+    Housing:        { x: 230, y: 780 },
+    // Off-frame (approximate, east of this screenshot's edge):
+    BlockE:         { x: 1300, y: 330 },
+    Gate02:         { x: 1400, y: 280 },
+    EastEndClub:    { x: 1350, y: 430 },
   };
 
   const EDGES = [
@@ -324,8 +347,8 @@
     const label = document.createElement("div");
     label.className = "node-label";
     label.textContent = code;
-    label.style.left = (pos.x / 1600 * 100) + "%";
-    label.style.top = (pos.y / 1200 * 100) + "%";
+    label.style.left = (pos.x / 1477 * 100) + "%";
+    label.style.top = (pos.y / 897 * 100) + "%";
     mapstage.appendChild(label);
   });
 
