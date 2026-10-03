@@ -45,7 +45,7 @@ from nl_parser import parse_query
 # than a relative one, so it resolves correctly both when run locally
 # (python app.py) and when run by Vercel's serverless Python runtime,
 # which may execute from a different working directory.
-_FRONTEND_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "Frontend")
+_FRONTEND_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "frontend")
 app = Flask(__name__, static_folder=_FRONTEND_DIR, static_url_path="")
 CORS(app)  # harmless now that everything is same-origin, kept for safety
 
