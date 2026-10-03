@@ -28,6 +28,7 @@ ERROR HANDLING:
 - No path exists between nodes    -> 404 Not Found
 """
 
+import os
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
@@ -39,7 +40,13 @@ from nl_parser import parse_query
 # frontend/) so Flask can serve index.html and assets/campus_map.jpg
 # directly. static_url_path="" means those files are served from the
 # root URL (e.g. /index.html, /assets/campus_map.jpg) instead of /static/...
-app = Flask(__name__, static_folder="../frontend", static_url_path="")
+#
+# Built as an absolute path (based on this file's own location) rather
+# than a relative one, so it resolves correctly both when run locally
+# (python app.py) and when run by Vercel's serverless Python runtime,
+# which may execute from a different working directory.
+_FRONTEND_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "frontend")
+app = Flask(__name__, static_folder=_FRONTEND_DIR, static_url_path="")
 CORS(app)  # harmless now that everything is same-origin, kept for safety
 
 
@@ -140,4 +147,11 @@ def smart_route():
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    # Locally: runs on port 5000, same as always (python app.py).
+    # On Render: the PORT environment variable is set automatically,
+    # and the app must bind to 0.0.0.0 (not 127.0.0.1) to be reachable.
+    # This does not change any app behavior — only where it listens.
+    import os
+    port = int(os.environ.get("PORT", 5000))
+    debug_mode = "PORT" not in os.environ
+    app.run(host="0.0.0.0", port=port, debug=debug_mode)
