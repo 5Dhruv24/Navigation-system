@@ -33,6 +33,7 @@ from flask_cors import CORS
 
 from campus_data import CAMPUS_GRAPH, LOCATION_NAMES
 from dijkstra import dijkstra
+from nl_parser import parse_query
 
 # static_folder points at the frontend directory (one level up, then into
 # frontend/) so Flask can serve index.html and assets/campus_map.jpg
@@ -91,6 +92,46 @@ def shortest_path():
     ]
 
     return jsonify({
+        "start": start,
+        "end": end,
+        "path": route,
+        "total_distance_m": total_distance,
+    })
+
+
+@app.route("/smart-route")
+def smart_route():
+    """
+    AI-style natural-language routing. Takes a free-text query,
+    e.g. /smart-route?query=how+do+i+get+to+the+library+from+gate+1
+    extracts the start/end locations with nl_parser, then runs the
+    exact same Dijkstra function as /shortest-path.
+    """
+    query = request.args.get("query", "").strip()
+
+    if not query:
+        return jsonify({"error": "Please type a question, e.g. 'how do I get to the library from gate 1'."}), 400
+
+    start, end = parse_query(query)
+
+    if start is None or end is None:
+        return jsonify({
+            "error": "Couldn't identify two locations in that query. "
+                     "Try mentioning a start and a destination clearly, "
+                     "e.g. 'route from boys hostel to the auditorium'."
+        }), 400
+
+    path, total_distance = dijkstra(CAMPUS_GRAPH, start, end)
+
+    if path is None:
+        return jsonify({"error": f"No route found between {start} and {end}."}), 404
+
+    route = [{"code": node, "name": LOCATION_NAMES.get(node, node)} for node in path]
+
+    return jsonify({
+        "query": query,
+        "understood_start": {"code": start, "name": LOCATION_NAMES.get(start, start)},
+        "understood_end": {"code": end, "name": LOCATION_NAMES.get(end, end)},
         "start": start,
         "end": end,
         "path": route,

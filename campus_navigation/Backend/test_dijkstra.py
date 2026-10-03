@@ -33,7 +33,7 @@ if __name__ == "__main__":
     print("=" * 50)
 
     # Test 1: A normal multi-hop route across campus
-    show_result("Gate01", "EastEndClub")
+    show_result("Gate01", "Housing")
 
     # Test 2: A short, direct-ish route
     show_result("Gate01", "BlockA")

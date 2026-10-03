@@ -33,26 +33,9 @@
 
   #mapstage {
     position: relative;
-    width: 1477px;   /* natural size of campus_map.jpg, scaled by transform below */
+    width: 1177px;   /* natural size of campus_map.jpg, scaled by transform below */
     height: 897px;
     flex-shrink: 0;
-  }
-
-  .offframe-strip {
-    position: absolute;
-    top: 0; right: 0;
-    width: 300px; height: 100%;
-    border-left: 1px dashed #3e6690;
-  }
-  .offframe-note {
-    position: absolute;
-    top: 10px; right: 10px;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 10.5px;
-    color: #5c7a92;
-    max-width: 280px;
-    text-align: right;
-    line-height: 1.5;
   }
 
   #mapstage img {
@@ -116,6 +99,48 @@
     border-radius: 8px;
   }
   select:focus { outline: none; border-color: var(--cyan); }
+
+  .divider {
+    display: flex; align-items: center; gap: 10px;
+    margin: 18px 0 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--cyan-dim); letter-spacing: 0.05em;
+  }
+  .divider::before, .divider::after {
+    content: ""; flex: 1; height: 1px; background: var(--line);
+  }
+
+  .ask-box {
+    display: flex; gap: 6px;
+  }
+  .ask-box input {
+    flex: 1;
+    padding: 10px 11px;
+    background: #0a1520;
+    border: 1px solid var(--line);
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13px;
+    border-radius: 8px;
+  }
+  .ask-box input:focus { outline: none; border-color: var(--cyan); }
+  .ask-box input::placeholder { color: var(--text-dim); }
+
+  .ask-box button {
+    flex: none; width: 42px;
+    background: var(--cyan);
+    color: #06202e;
+  }
+  .ask-box button:hover { background: #8ad4ff; }
+
+  .understood {
+    margin-top: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--cyan);
+    display: none;
+  }
+  .understood b { color: var(--ok); }
 
   .btn-row { display: flex; gap: 8px; margin-top: 14px; }
 
@@ -236,9 +261,7 @@
 <div id="mapwrap">
   <div id="mapstage">
     <img src="assets/campus_map.jpg" alt="USAR GGSIPU East Delhi Campus — satellite view">
-    <div class="offframe-strip"></div>
-    <div class="offframe-note">Block E / Gate 02 / East End Club<br>lie further east — shown here<br>at approximate relative position</div>
-    <svg id="overlay" width="100%" height="100%" viewBox="0 0 1477 897" preserveAspectRatio="none"></svg>
+    <svg id="overlay" width="100%" height="100%" viewBox="0 0 1177 897" preserveAspectRatio="none"></svg>
   </div>
 </div>
 
@@ -256,6 +279,13 @@
     <button id="findRouteBtn" onclick="findRoute()">Find Route</button>
     <button class="ghost" title="Use my current location as start" onclick="useMyLocation()">⦿</button>
   </div>
+
+  <div class="divider">ASK CAMPUSNAV</div>
+  <div class="ask-box">
+    <input type="text" id="nlQuery" placeholder="e.g. library from gate 1" onkeydown="if(event.key==='Enter') askCampusNav()">
+    <button onclick="askCampusNav()" title="Ask">→</button>
+  </div>
+  <div class="understood" id="understoodBox"></div>
 
   <div class="error" id="errorBox"></div>
 
@@ -286,31 +316,34 @@
   // -perfect placement for your actual printout/photo.
   // ---------------------------------------------------------------
   // Pixel coordinates on the real satellite screenshot
-  // (campus_map.jpg, 1477 x 897 — last 300px is a dark padding strip
-  // for the 3 locations that fall just outside the screenshot frame).
+  // (campus_map.jpg, 1177 x 897), corrected per the user's second
+  // annotation pass:
+  // - Curved building, left to right: B, D, C, A (pin marks A) — unchanged
+  // - Gate 01 is actually next to the Block E (Auditorium) dome, top-right
+  //   (this was mislabeled "Gate 02" in the previous version)
+  // - Gate 02 is the entrance near the top of the B/C/A parking loop
+  // - East End Club removed — not a real node on this campus
   const NODE_PIXELS = {
-    Gate01:         { x: 630, y: 160 },
+    BlockB:         { x: 460, y: 345 },
+    BlockD:         { x: 515, y: 360 },
+    BlockC:         { x: 565, y: 335 },
     BlockA:         { x: 615, y: 300 },  // matches the red pin (USAR)
-    BlockC:         { x: 560, y: 330 },
-    BlockB:         { x: 495, y: 355 },
-    BlockD:         { x: 560, y: 400 },
-    BlockG:         { x: 195, y: 460 },
+    BlockG:         { x: 215, y: 440 },  // Sports Hall dome
+    BlockE:         { x: 905, y: 70 },   // Auditorium dome
+    Gate01:         { x: 1070, y: 125 }, // next to Block E, Maharaja Surajmal Marg
+    Gate02:         { x: 400, y: 195 },  // top of the B/C/A parking loop
     BoysHostel:     { x: 230, y: 560 },
     TeachersHostel: { x: 190, y: 650 },
     GirlsHostel:    { x: 320, y: 700 },
     Housing:        { x: 230, y: 780 },
-    // Off-frame (approximate, east of this screenshot's edge):
-    BlockE:         { x: 1300, y: 330 },
-    Gate02:         { x: 1400, y: 280 },
-    EastEndClub:    { x: 1350, y: 430 },
   };
 
   const EDGES = [
-    ["Gate01", "BlockB"], ["Gate01", "BlockG"], ["Gate02", "BlockE"],
-    ["BlockB", "BlockC"], ["BlockB", "BlockG"], ["BlockC", "BlockA"],
-    ["BlockC", "BlockD"], ["BlockA", "BlockE"], ["BlockD", "BoysHostel"],
-    ["BlockE", "EastEndClub"], ["BoysHostel", "TeachersHostel"],
-    ["TeachersHostel", "GirlsHostel"], ["GirlsHostel", "Housing"],
+    ["Gate02", "BlockB"], ["BlockB", "BlockC"], ["BlockB", "BlockG"],
+    ["BlockC", "BlockA"], ["BlockC", "BlockD"], ["BlockA", "BlockE"],
+    ["BlockE", "Gate01"], ["BlockD", "BoysHostel"],
+    ["BoysHostel", "TeachersHostel"], ["TeachersHostel", "GirlsHostel"],
+    ["GirlsHostel", "Housing"],
   ];
 
   const svgNS = "http://www.w3.org/2000/svg";
@@ -347,7 +380,7 @@
     const label = document.createElement("div");
     label.className = "node-label";
     label.textContent = code;
-    label.style.left = (pos.x / 1477 * 100) + "%";
+    label.style.left = (pos.x / 1177 * 100) + "%";
     label.style.top = (pos.y / 897 * 100) + "%";
     mapstage.appendChild(label);
   });
@@ -396,9 +429,34 @@
     });
   }
 
+  function renderRoute(data) {
+    routeSteps.innerHTML = data.path.map((loc, i) =>
+      `<div class="route-step"><span class="idx">${String(i + 1).padStart(2, "0")}</span>${loc.name}</div>`
+    ).join("");
+    totalDistance.innerHTML = `${data.total_distance_m} m <span>total distance</span>`;
+    resultBox.style.display = "block";
+
+    // Draw the route on top of the real campus map
+    if (routePolyline) overlay.removeChild(routePolyline);
+    resetNodeStyles();
+
+    const points = data.path.map(loc => `${NODE_PIXELS[loc.code].x},${NODE_PIXELS[loc.code].y}`).join(" ");
+    routePolyline = svgEl("polyline", {
+      points, fill: "none", stroke: "#4fd1a5", "stroke-width": 7,
+      "stroke-linecap": "round", "stroke-linejoin": "round", opacity: 0.95,
+    });
+    overlay.appendChild(routePolyline);
+
+    data.path.forEach(loc => {
+      nodeCircles[loc.code].setAttribute("fill", "#4fd1a5");
+      nodeCircles[loc.code].setAttribute("r", 13);
+    });
+  }
+
   async function findRoute() {
     clearError();
     resultBox.style.display = "none";
+    understoodBox.style.display = "none";
 
     const start = startSelect.value;
     const end = endSelect.value;
@@ -415,33 +473,48 @@
 
       if (!res.ok) { showError(data.error || "Something went wrong."); return; }
 
-      routeSteps.innerHTML = data.path.map((loc, i) =>
-        `<div class="route-step"><span class="idx">${String(i + 1).padStart(2, "0")}</span>${loc.name}</div>`
-      ).join("");
-      totalDistance.innerHTML = `${data.total_distance_m} m <span>total distance</span>`;
-      resultBox.style.display = "block";
-
-      // Draw the route on top of the real campus map
-      if (routePolyline) overlay.removeChild(routePolyline);
-      resetNodeStyles();
-
-      const points = data.path.map(loc => `${NODE_PIXELS[loc.code].x},${NODE_PIXELS[loc.code].y}`).join(" ");
-      routePolyline = svgEl("polyline", {
-        points, fill: "none", stroke: "#4fd1a5", "stroke-width": 7,
-        "stroke-linecap": "round", "stroke-linejoin": "round", opacity: 0.95,
-      });
-      overlay.appendChild(routePolyline);
-
-      data.path.forEach(loc => {
-        nodeCircles[loc.code].setAttribute("fill", "#4fd1a5");
-        nodeCircles[loc.code].setAttribute("r", 13);
-      });
+      renderRoute(data);
 
     } catch (err) {
       showError("Could not reach the server. Make sure app.py is running.");
     } finally {
       findRouteBtn.disabled = false;
       findRouteBtn.textContent = "Find Route";
+    }
+  }
+
+  // ---------------------------------------------------------------
+  // "Ask CampusNav" — natural-language query, parsed server-side
+  // by nl_parser.py (rule-based, no external AI service needed).
+  // ---------------------------------------------------------------
+  const nlQuery = document.getElementById("nlQuery");
+  const understoodBox = document.getElementById("understoodBox");
+
+  async function askCampusNav() {
+    clearError();
+    resultBox.style.display = "none";
+    understoodBox.style.display = "none";
+
+    const query = nlQuery.value.trim();
+    if (!query) { showError("Type a question first, e.g. 'library from gate 1'."); return; }
+
+    try {
+      const res = await fetch(`${API_BASE}/smart-route?query=${encodeURIComponent(query)}`);
+      const data = await res.json();
+
+      if (!res.ok) { showError(data.error || "Couldn't understand that query."); return; }
+
+      // Sync the dropdowns so the person can see/confirm what was understood
+      startSelect.value = data.start;
+      endSelect.value = data.end;
+
+      understoodBox.innerHTML = `Understood: <b>${data.understood_start.name}</b> → <b>${data.understood_end.name}</b>`;
+      understoodBox.style.display = "block";
+
+      renderRoute(data);
+
+    } catch (err) {
+      showError("Could not reach the server. Make sure app.py is running.");
     }
   }
 
