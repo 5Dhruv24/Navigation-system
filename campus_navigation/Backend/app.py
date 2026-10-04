@@ -146,7 +146,10 @@ def smart_route():
     })
 
 
+
 if __name__ == "__main__":
+
+    
     # Locally: runs on port 5000, same as always (python app.py).
     # On Render: the PORT environment variable is set automatically,
     # and the app must bind to 0.0.0.0 (not 127.0.0.1) to be reachable.
