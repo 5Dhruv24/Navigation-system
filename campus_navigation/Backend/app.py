@@ -150,8 +150,9 @@ if __name__ == "__main__":
     # Locally: runs on port 5000, same as always (python app.py).
     # On Render: the PORT environment variable is set automatically,
     # and the app must bind to 0.0.0.0 (not 127.0.0.1) to be reachable.
-    # This does not change any app behavior — only where it listens.
+    # This does not change any app behavior — only where it listen.
     import os
     port = int(os.environ.get("PORT", 5000))
     debug_mode = "PORT" not in os.environ
     app.run(host="0.0.0.0", port=port, debug=debug_mode)
+     
